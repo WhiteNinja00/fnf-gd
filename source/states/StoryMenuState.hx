@@ -273,7 +273,10 @@ class StoryMenuState extends MusicBeatState
 
 	function selectWeek()
 	{
-		if (!weekIsLocked(loadedWeeks[curWeek].fileName))
+		if(loadedWeeks[curWeek].fileName == 'gd') {
+			Gd.storymodelol = true;
+			LoadingState.loadAndSwitchState(new Gd(Paths.formatToSongPath(Difficulty.list[curDifficulty])), true);
+		} else if (!weekIsLocked(loadedWeeks[curWeek].fileName))
 		{
 			// We can't use Dynamic Array .copy() because that crashes HTML5, here's a workaround.
 			var songArray:Array<String> = [];

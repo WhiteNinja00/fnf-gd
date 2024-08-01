@@ -1,0 +1,31 @@
+{
+	"songs": [
+		[
+			"Geometry Dash",
+			"gd",
+			[
+				246,
+				182,
+				4
+			]
+		]
+	],
+	"hideFreeplay": false,
+	"weekBackground": "stage",
+	"weekCharacters": [
+		"",
+		"bf",
+		"gf"
+	],
+	"storyName": "Geometry Dash",
+	"weekName": "gd",
+	"freeplayColor": [
+		40,
+		125,
+		255
+	],
+	"hideStoryMode": false,
+	"weekBefore": "week7",
+	"difficulties": "stereomadness, backontrack, polargeist, dryout, baseafterbase, cantletgo, jumper, timemachine, cycles, xstep",
+	"startUnlocked": true
+}
