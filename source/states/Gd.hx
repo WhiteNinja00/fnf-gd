@@ -22,6 +22,7 @@ using StringTools;
 class Gd extends MusicBeatState {
     var splitblocks:Array<BlockProperties> = [];
     var allblocks:FlxTypedGroup<FlxSprite>;
+    var allrods:FlxTypedGroup<FlxSprite>;
 
     var bg:FlxBackdrop;
     var groundcolide:FlxSprite;
@@ -31,11 +32,13 @@ class Gd extends MusicBeatState {
     var ground2:FlxBackdrop;
     var line2:FlxSprite;
     var player:FlxSprite;
+    var end:FlxSprite;
 
     var jumptween:FlxTween;
 
-    var killid:Array<Int> = [5, 8, 9, 39, 103];
-    var noninteractable:Array<Int> = [18, 19, 20, 21, 113, 114, 115, 129, 130, 131, 191, 198, 199, 503, 504, 505, 1008, 1009, 1010, 1011, 1012, 1013, 36, 1333, 141, 1022, 84, 29, 30, 67, 35, 140, 1332, 41, 106, 107];
+    var killid:Array<Int> = [5, 8, 9, 39, 103, 61];
+    var noninteractable:Array<Int> = [18, 19, 20, 21, 113, 114, 115, 129, 130, 131, 191, 198, 199, 503, 504, 505, 1008, 1009, 1010, 1011, 1012, 1013, 36, 1333, 141, 1022, 84, 29, 30, 67, 35, 140, 1332, 41, 106, 107, 73, 110, 15, 16, 17, 64, 48, 49, 50, 51, 52, 53, 54];
+    var rods:Array<Int> = [15, 16, 17];
     var notimplemented:Array<Int> = [];
     var trigger:Array<Int> = [29, 30];
 
@@ -63,6 +66,7 @@ class Gd extends MusicBeatState {
     public static var storymodelol = false;
     var finished = false;
     var finishedground = true;
+    var coolcolor = 0xFF008EDA;
 
     public function new(levellol:String) {
 		super();
@@ -74,6 +78,7 @@ class Gd extends MusicBeatState {
         readlevel();
 
 		allblocks = new FlxTypedGroup<FlxSprite>();
+        allrods = new FlxTypedGroup<FlxSprite>();
 
         buildlevel(splitblocks);
 
@@ -86,6 +91,7 @@ class Gd extends MusicBeatState {
         bg.y = -825;
 
         add(allblocks);
+        add(allrods);
 
         groundcolide = new FlxSprite(0, 15).loadGraphic(Paths.image('gd/ground/' + groundid));
         groundcolide.immovable = true;
@@ -160,6 +166,11 @@ class Gd extends MusicBeatState {
         player.maxVelocity.set(80, 560);
         add(player);
 
+        end = new FlxSprite(highestx + 310, 0).loadGraphic(Paths.image('gd/end'));
+        end.immovable = true;
+        end.scrollFactor.set(1, 0);
+        end.updateHitbox();
+        add(end);
         
         switch(gamemode) {
             case 1:
@@ -180,6 +191,7 @@ class Gd extends MusicBeatState {
 		FlxG.cameras.add(camHUD, false);
 		FlxG.cameras.setDefaultDrawTarget(camGame, true);
         FlxG.camera.follow(player, TOPDOWN_TIGHT, 1);
+        FlxG.camera.maxScrollX = highestx + 400;
         FlxG.camera.maxScrollY = 120;
         FlxG.camera.targetOffset.x = 120;
         FlxG.camera.zoom = 2;
@@ -199,13 +211,13 @@ class Gd extends MusicBeatState {
         FlxG.sound.playMusic(Paths.inst(level), 1, false);
         FlxG.sound.music.pause();
         new FlxTimer().start(0, function(tmr:FlxTimer) {
-            FlxG.sound.music.time = (songoffset * 1000) - 500;
+            FlxG.sound.music.time = (songoffset * 1000) - 1500;
             FlxG.sound.music.play();
         });
     }
 
     override function update(elapsed:Float) {
-        if(controls.PAUSE || (getpercent() >= 100 && !finished)) {
+        if((controls.PAUSE || getpercent() >= 100) && !finished) {
             finished = true;
             FlxG.sound.playMusic(Paths.music('freakyMenu'));
             if(storymodelol) {
@@ -216,7 +228,7 @@ class Gd extends MusicBeatState {
         }
 
         if(!isdead) {
-            player.x += 310 * elapsed * speed;
+            player.x += 30 * elapsed * speed;
         }
 
         var tempfin:Array<Float> = [];
@@ -309,10 +321,10 @@ class Gd extends MusicBeatState {
         allblocks.forEach(function(block:FlxSprite) {
             if(block.isOnScreen() && splitblocks[block.ID].used == false) {
                 switch(splitblocks[block.ID].id) {
-                    case 18 | 19 | 20 | 21 | 113 | 114 | 115 | 41 | 106 | 107:
-                        block.color = 0xFF008EDA;
+                    case 18 | 19 | 20 | 21 | 113 | 114 | 115 | 41 | 106 | 107 | 48 | 49 | 50 | 51 | 52 | 53 | 54:
+                        block.color = coolcolor;
                         block.blend = ADD;
-                    case 9 | 191 | 198 | 199:
+                    case 9 | 191 | 198 | 199 | 61:
                         block.color = 0xFF000000;
                     default:
                         for(color in colorchannels) {
@@ -322,42 +334,49 @@ class Gd extends MusicBeatState {
                         }
                 }
                 FlxG.overlap(player, block, function(object1:FlxObject, object2:FlxObject) {
-                    if(justjumpinorsmth) {
-                        switch(splitblocks[block.ID].id) {
-                            case 36:
+                    switch(splitblocks[block.ID].id) {
+                        case 36:
+                            if(justjumpinorsmth) {
                                 splitblocks[block.ID].used = true;
-                                player.velocity.y = -player.maxVelocity.y * 1.1 * (if(upsidedown) -1 else 1);
-                            case 84:
+                                player.velocity.y = -player.maxVelocity.y * 0.95 * (if(upsidedown) -1 else 1); //done
+                            }
+                        case 84:
+                            if(justjumpinorsmth) {
                                 splitblocks[block.ID].used = true;
                                 upsidedown = !upsidedown;
                                 gravity();
-                            case 141:
+                            }
+                        case 141:
+                            if(justjumpinorsmth) {
                                 splitblocks[block.ID].used = true;
                                 player.velocity.y = -player.maxVelocity.y * 0.5 * (if(upsidedown) -1 else 1);
-                            case 1022:
+                            }
+                        case 1022:
+                            if(justjumpinorsmth) {
                                 splitblocks[block.ID].used = true;
                                 upsidedown = !upsidedown;
                                 gravity();
                                 player.velocity.y = -player.maxVelocity.y * 0.91 * (if(upsidedown) -1 else 1);
-                            case 1333:
+                            }
+                        case 1333:
+                            if(justjumpinorsmth) {
                                 splitblocks[block.ID].used = true;
                                 player.velocity.y = -player.maxVelocity.y * 2.11 * (if(upsidedown) -1 else 1);
-                        }
-                    }
-                    switch(splitblocks[block.ID].id) {
+                            }
                         case 67:
                             splitblocks[block.ID].used = true;
                             upsidedown = !upsidedown;
+                            player.velocity.y = -player.maxVelocity.y * 0.9 * (if(upsidedown) -1 else 1);
                             gravity();
                         case 35:
                             splitblocks[block.ID].used = true;
-                            player.velocity.y = -player.maxVelocity.y * 2.11 * (if(upsidedown) -1 else 1);
+                            player.velocity.y = -player.maxVelocity.y * 33.5 * (if(upsidedown) -1 else 1); //done
                         case 140:
                             splitblocks[block.ID].used = true;
                             player.velocity.y = -player.maxVelocity.y * 0.9 * (if(upsidedown) -1 else 1);
                         case 1332:
                             splitblocks[block.ID].used = true;
-                            player.velocity.y = -player.maxVelocity.y * 3.04 * (if(upsidedown) -1 else 1);
+                            player.velocity.y = -player.maxVelocity.y * 52.7 * (if(upsidedown) -1 else 1);
                     }
                 });
             }
@@ -373,12 +392,6 @@ class Gd extends MusicBeatState {
                 for(coolid in killid) {
                     if(coolid == splitblocks[block.ID].id) {
                         kill = true;
-                    }
-                }
-                var nonin = false;
-                for(coolid in noninteractable) {
-                    if(coolid == splitblocks[block.ID].id) {
-                        nonin = true;
                     }
                 }
                 if(kill) {
@@ -412,6 +425,12 @@ class Gd extends MusicBeatState {
                                 gravity();
                             });
                         default:
+                            var nonin = false;
+                            for(coolid in noninteractable) {
+                                if(coolid == splitblocks[block.ID].id) {
+                                    nonin = true;
+                                }
+                            }
                             if(!nonin) {
                                 if(!FlxG.collide(player, block)) {
                                     FlxG.overlap(player, block, dead);
@@ -515,7 +534,7 @@ class Gd extends MusicBeatState {
 
     function ship(object1:FlxObject, object2:FlxObject) {
         gamemode = 1;
-        var coolgroundy = ((Math.round(-(-object2.y) / 30) + 6) * 30) + 15;
+        var coolgroundy = ((Math.floor(-(-object2.y) / 30) + 7) * 30) + 15;
         if(coolgroundy > 15) {
             coolgroundy = 15;
         }
@@ -531,7 +550,7 @@ class Gd extends MusicBeatState {
 
     function ball(object1:FlxObject, object2:FlxObject) {
         gamemode = 2;
-        var coolgroundy = ((Math.round(-(-object2.y) / 30) + 6) * 30) + 15;
+        var coolgroundy = ((Math.floor(-(-object2.y) / 30) + 8) * 30) + 15;
         if(coolgroundy > 15) {
             coolgroundy = 15;
         }
@@ -564,15 +583,15 @@ class Gd extends MusicBeatState {
     function changespeed() {
         switch(speedportal) {
             case 1:
-                speed = 0.8;
+                speed = 8.36820083682;
             case 0:
-                speed = 1;
+                speed = 10.3761348898;
             case 2:
-                speed = 1.25;
+                speed = 12.9032258065;
             case 3:
-                speed = 1.5;
+                speed = 15.5945419103;
             case 4:
-                speed = 1.85;
+                speed = 19.1846522782;
         }
     }
 
@@ -763,11 +782,25 @@ class Gd extends MusicBeatState {
             if(gamemode == 0) {
                 block.allowCollisions = FlxObject.UP;
             }
-            for(istrigger in trigger) {
-                if(istrigger == i.id) {
-                    block.visible = false;
-                    triggers.push({id:i.id, x:i.xpos, red:i.red, green:i.green, blue:i.blue, opacity:i.opacity, duration:i.duration, target:i.targetcolor});
-                }
+            if(trigger.contains(i.id)) {
+                block.visible = false;
+                triggers.push({id:i.id, x:i.xpos, red:i.red, green:i.green, blue:i.blue, opacity:i.opacity, duration:i.duration, target:i.targetcolor});
+            }
+            if(rods.contains(i.id)) {
+                var rod = new FlxSprite(i.xpos, -i.ypos).loadGraphic(Paths.image('gd/blocks/rod'));
+                rod.ID = num;
+                rod.antialiasing = ClientPrefs.data.antialiasing;
+                rod.scale.x = i.sca / 8;
+                rod.scale.y = i.sca / 8;
+                rod.angle = i.rot;
+                rod.updateHitbox();
+                rod.x = 15 - (rod.width / 2) + i.xpos;
+                rod.y = 15 - (rod.height / 2) - i.ypos;
+                rod.immovable = true;
+                rod.flipX = i.fx;
+                rod.flipY = i.fy;
+                rod.color = coolcolor;
+                allrods.add(rod);
             }
             allblocks.add(block);
             num += 1;
@@ -790,7 +823,7 @@ class Gd extends MusicBeatState {
     }
 
     function getpercent() {
-        var coolpercent = Math.round((player.x / ((highestx + 340) - 30)) * 1000) / 10;
+        var coolpercent = Math.round((player.x / (highestx + 310)) * 1000) / 10;
         if(coolpercent < 0) {
             coolpercent = 0;
         }
